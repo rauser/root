@@ -1,8 +1,18 @@
-// @(#)root/unfold:$Id$
-// Author: Stefan Schmitt DESY, 10/08/11
+// Author: Stefan Schmitt
+// DESY, 10/08/11
 
-/** \class TUnfoldBinningXML
-\ingroup Unfold
+//  Version 17.9, parallel to changes in TUnfold
+//
+//  History:
+//    Version 17.8, relaxed DTD definition
+//    Version 17.7, in parallel to changes in TUnfold
+//    Version 17.6, with updated doxygen comments
+//    Version 17.5, in parallel to changes in TUnfold
+//    Version 17.4, in parallel to changes in TUnfoldBinning
+//    Version 17.3, support for the "repeat" attribute for element Bin
+//    Version 17.2, initial version, numbered in parallel to TUnfold
+
+/** \class TUnfoldBinningXMLV17
 XML interfate to binning schemes, for use with the unfolding algorithm
 TUnfoldDensity.
 
@@ -10,26 +20,24 @@ Binning schemes are used to map analysis bins on a single histogram
 axis and back. The analysis bins may include unconnected bins (e.g
 nuisances for background normalisation) or various multidimensional
 histograms (signal bins, differential background normalisation bins, etc).
-
+<br/>
 If you use this software, please consider the following citation
-
+<br/>
 <b>S.Schmitt, JINST 7 (2012) T10003 [arXiv:1205.6201]</b>
-
-Detailed documentation and updates are available on
+<br/>
+Detailed documentation and updates are available on 
 http://www.desy.de/~sschmitt
 
 Please consult the documentation of the class TUnfoldBinning about how to use
 binning schemes. This class provides methods to read and write binning
 schemes in the XML language. There is also a method which writes out
 a dtd file for validation.
-
-### Example XML code
-The example below encodes two binning schemes, _detector_ and
-_generator_. The detector scheme consists of a single,
+<h3>Example XML code</h3>
+The example below encodes two binning schemes, <em>detector</em> and
+<em>generator</em>. The detecor scheme consists of a single,
 three-dimensional distribution (pt,eta,discriminator). The generator
 scheme consists of two two-dimensional distributions, signal and background.
-
-~~~
+<pre>
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE TUnfoldBinning SYSTEM "tunfoldbinning.dtd">
 <TUnfoldBinning>
@@ -91,9 +99,11 @@ scheme consists of two two-dimensional distributions, signal and background.
  </BinningNode>
 </BinningNode>
 </TUnfoldBinning>
-~~~
+</pre>
 
---------------------------------------------------------------------------------
+*/
+
+/*
   This file is part of TUnfold.
 
   TUnfold is free software: you can redistribute it and/or modify
@@ -108,15 +118,7 @@ scheme consists of two two-dimensional distributions, signal and background.
 
   You should have received a copy of the GNU General Public License
   along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
-
-<b>Version 17.6, with updated doxygen comments</b>
-
-#### History:
-  - Version 17.5, in parallel to changes in TUnfold
-  - Version 17.4, in parallel to changes in TUnfoldBinning
-  - Version 17.3, support for the "repeat" attribute for element Bin
-  - Version 17.2, initial version, numbered in parallel to TUnfold
-  */
+*/
 
 
 #include "TUnfold.h"
@@ -135,20 +137,19 @@ scheme consists of two two-dimensional distributions, signal and background.
 
 using namespace std;
 
-ClassImp(TUnfoldBinningXML);
+ClassImp(TUnfoldBinningXMLV17)
 
 /********************* XML **********************/
 
-////////////////////////////////////////////////////////////////////////////////
-/// Write dtd file.
+////////////////////////////////////////////////////////////////////////
+/// write dtd file
 ///
 /// \param[out] out stream for writing the dtd
-
-void TUnfoldBinningXML::WriteDTD(std::ostream &out) {
+void TUnfoldBinningXMLV17::WriteDTD(std::ostream &out) {
    out
       <<"<!-- TUnfold Version "<<TUnfold::GetTUnfoldVersion()<<" -->\n"
       <<"<!ELEMENT TUnfoldBinning (BinningNode)+ >\n"
-      <<"<!ELEMENT BinningNode (BinningNode+|(Binfactorlist?,Axis)|Bins) >\n"
+      <<"<!ELEMENT BinningNode ((Bins?,BinningNode*)|(Binfactorlist?,Axis,BinningNode*)) >\n"
       <<"<!ATTLIST BinningNode name ID #REQUIRED firstbin CDATA \"-1\"\n"
       <<"    factor CDATA \"1.\">\n"
       <<"<!ELEMENT Axis ((Bin+,Axis?)|(Axis)) >\n"
@@ -164,32 +165,29 @@ void TUnfoldBinningXML::WriteDTD(std::ostream &out) {
       <<"<!ATTLIST BinLabel index CDATA #REQUIRED name CDATA #REQUIRED>\n";
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Write dtd file.
+////////////////////////////////////////////////////////////////////////
+/// write dtd file
 ///
 /// \param[in] file regular file for writing the dtd
-
-void TUnfoldBinningXML::WriteDTD(const char *file) {
+void TUnfoldBinningXMLV17::WriteDTD(const char *file) {
    ofstream out(file);
    WriteDTD(out);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Import a binning scheme from an XML file.
+////////////////////////////////////////////////////////////////////////
+/// import a binning scheme from an XML file
 ///
 /// \param[in] document XMP document tree
 /// \param[in] name identifier of the binning scheme
 ///
 /// returns a new TUnfoldBinningXML, if <b>name</b> is found in <b>document</b>
-///
-/// import binning scheme from a XML document
-///  - document: the XML document
-///  - name: the name of the binning scheme to import
-///     if name==0, the first binning scheme found in the tree is imported
-
-TUnfoldBinningXML *TUnfoldBinningXML::ImportXML
+TUnfoldBinningXMLV17 *TUnfoldBinningXMLV17::ImportXML
 (const TXMLDocument *document,const char *name) {
-   TUnfoldBinningXML *r=0;
+  // import binning scheme from a XML document
+  //   document: the XML document
+  //   name: the name of the binning scheme to import
+  //     if name==0, the first binning scheme found in the tree is imported
+   TUnfoldBinningXMLV17 *r=0;
    TXMLNode *root=document->GetRootNode();
    TXMLNode *binningNode=0;
    if(root && (!TString(root->GetNodeName()).CompareTo("TUnfoldBinning")) &&
@@ -220,20 +218,19 @@ TUnfoldBinningXML *TUnfoldBinningXML::ImportXML
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Recursively import one node from the XML tree.
+////////////////////////////////////////////////////////////////////////
+/// recursively import one node from the XML tree
 ///
 /// \param[in] node node in the XML document tree
 ///
 /// returns a new TUnfoldBinningXML
-///
-/// import data from a given "BinningNode"
 
-TUnfoldBinningXML *TUnfoldBinningXML::ImportXMLNode
+TUnfoldBinningXMLV17 *TUnfoldBinningXMLV17::ImportXMLNode
 (TXMLNode *node) {
+   // import data from a given "BinningNode"
    const char *name=0;
    Double_t factor=1.0;
-   TUnfoldBinningXML *r=0;
+   TUnfoldBinningXMLV17 *r=0;
    Int_t nBins=0;
    const char *binNames=0;
    TIterator *i=node->GetAttributes()->MakeIterator();
@@ -309,7 +306,7 @@ TUnfoldBinningXML *TUnfoldBinningXML::ImportXMLNode
             }
          }
       }
-      r=new TUnfoldBinningXML(name,nBins,binNames);
+      r=new TUnfoldBinningXMLV17(name,nBins,binNames);
 
       // add add axis information
       r->AddAxisXML(node);
@@ -358,13 +355,13 @@ TUnfoldBinningXML *TUnfoldBinningXML::ImportXMLNode
       // set normalisation factors
       r->SetBinFactor(factor,perBinFactors);
 
-      // now: loop over all child binning and add them
+      // now: loop over all child binnings and add them
       for(TXMLNode *child=node->GetChildren();child;
           child=child->GetNextNode()) {
          if(child->GetNodeType()==TXMLNode::kXMLElementNode &&
             !TString(child->GetNodeName()).CompareTo("BinningNode") &&
             child->GetAttributes()) {
-            TUnfoldBinning *childBinning=ImportXMLNode(child);
+            TUnfoldBinningV17 *childBinning=ImportXMLNode(child);
             r->AddBinning(childBinning);
          }
       }
@@ -372,14 +369,13 @@ TUnfoldBinningXML *TUnfoldBinningXML::ImportXMLNode
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Import axis from XML node.
+////////////////////////////////////////////////////////////////////////
+/// import axis from XML node
 ///
 /// \param[in] node node in the XML document tree
-///
-/// find axis if there is one
 
-void TUnfoldBinningXML::AddAxisXML(TXMLNode *node) {
+void TUnfoldBinningXMLV17::AddAxisXML(TXMLNode *node) {
+   // find axis if there is one
    TXMLNode *axis=0;
    for(TXMLNode *child=node->GetChildren();child;
        child=child->GetNextNode()) {
@@ -403,14 +399,14 @@ void TUnfoldBinningXML::AddAxisXML(TXMLNode *node) {
          }
       }
       Bool_t hasMoreAxes=kFALSE;
-      Bool_t underflow=kFALSE,overflow=kFALSE;
+      Bool_t underflow=kFALSE,overflow=kFALSE; 
       for(TXMLNode *child=axis->GetChildren();child;
           child=child->GetNextNode()) {
          if(child->GetNodeType()==TXMLNode::kXMLElementNode) {
             TString nodeName(child->GetNodeName());
             if(!nodeName.CompareTo("Axis")) hasMoreAxes=kTRUE;
             if(!nodeName.CompareTo("Bin")) {
-               Bool_t isUnderflow=kFALSE,isOverflow=kFALSE;
+               Bool_t isUnderflow=kFALSE,isOverflow=kFALSE; 
                Int_t repeat=1;
                i=child->GetAttributes()->MakeIterator();
                while((attr=(TXMLAttr *)i->Next())) {
@@ -451,7 +447,7 @@ void TUnfoldBinningXML::AddAxisXML(TXMLNode *node) {
                   }
                   if(binWidth<=0.0) {
                      node->Error("AddAxisXML",
-                                 "bin width can not be smaller than zero");
+                                 "bin withd can not be smaller than zero");
                   }
                   for(int iBin=iBin0;iBin<iBin1;iBin++) {
                      binEdges[iBin]=binEdges[iBin0-1]+(iBin-iBin0+1)*binWidth;
@@ -468,8 +464,8 @@ void TUnfoldBinningXML::AddAxisXML(TXMLNode *node) {
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Export a binning scheme to a stream in XML format.
+////////////////////////////////////////////////////////////////////////
+/// export a binning scheme to a stream in XML format
 ///
 /// \param[in] binning the binning scheme to export
 /// \param[out] stream to write to
@@ -480,16 +476,16 @@ void TUnfoldBinningXML::AddAxisXML(TXMLNode *node) {
 /// \param[in] indent indentation of the XML output
 ///
 /// returns true if the writing succeeded
-
-Int_t TUnfoldBinningXML::ExportXML
-(const TUnfoldBinning &binning,std::ostream &out,Bool_t writeHeader,
+Int_t TUnfoldBinningXMLV17::ExportXML
+(const TUnfoldBinningV17 &binning,std::ostream &out,Bool_t writeHeader,
  Bool_t writeFooter,Int_t indent) {
+  // 
   if(writeHeader) {
      out<<"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         <<"<!DOCTYPE TUnfoldBinning SYSTEM \"tunfoldbinning.dtd\">\n"
         <<"<TUnfoldBinning>\n";
   }
-  TString trailer(' ',indent);
+  TString trailer(' ',indent); 
   out<<trailer<<"<BinningNode name=\""<<binning.GetName()<<"\" firstbin=\""
      <<binning.GetStartBin();
   if(binning.IsBinFactorGlobal()) {
@@ -513,7 +509,7 @@ Int_t TUnfoldBinningXML::ExportXML
        const TObjString *name=binning.GetUnconnectedBinName(i);
        if(!name) break;
        out<<trailer<<"  <BinLabel index=\""<<i<<"\" name=\""
-     <<name->GetString()<<"\" />\n";
+	  <<name->GetString()<<"\" />\n";
     }
     out<<trailer<<" </Bins>\n";
   } else {
@@ -521,11 +517,11 @@ Int_t TUnfoldBinningXML::ExportXML
       TString axisTrailer(' ',indent+1+axis);
       TVectorD const *edges=binning.GetDistributionBinning(axis);
       out<<axisTrailer<<"<Axis name=\""<<binning.GetDistributionAxisLabel(axis)
-     <<"\" lowEdge=\""<<(*edges)[0]<<"\">\n";
+	  <<"\" lowEdge=\""<<(*edges)[0]<<"\">\n";
       if(binning.HasUnderflow(axis)) {
-   out<<axisTrailer<<" <Bin location=\"underflow\" width=\""
-       <<binning.GetDistributionUnderflowBinWidth(axis)<<"\" center=\""
-       <<binning.GetDistributionBinCenter(axis,-1)<<"\" />\n";
+	out<<axisTrailer<<" <Bin location=\"underflow\" width=\""
+	    <<binning.GetDistributionUnderflowBinWidth(axis)<<"\" center=\""
+	    <<binning.GetDistributionBinCenter(axis,-1)<<"\" />\n";
       }
       for(Int_t i=0;i<edges->GetNrows()-1;i++) {
         Int_t repeat=1;
@@ -552,13 +548,13 @@ Int_t TUnfoldBinningXML::ExportXML
         }
       }
       if(binning.HasOverflow(axis)) {
-   out<<axisTrailer<<" <Bin location=\"overflow\" width=\""
+	out<<axisTrailer<<" <Bin location=\"overflow\" width=\""
            <<binning.GetDistributionOverflowBinWidth(axis)<<"\" center=\""
            <<binning.GetDistributionBinCenter(axis,edges->GetNrows()-1)<<"\"/>\n";
       }
     }
     for(Int_t axis=binning.GetDistributionDimension()-1;axis>=0;axis--) {
-      TString axisTrailer(' ',indent+1+axis);
+      TString axisTrailer(' ',indent+1+axis);      
       out<<axisTrailer<<"</Axis>\n";
     }
   }
@@ -573,19 +569,18 @@ Int_t TUnfoldBinningXML::ExportXML
   return out.fail() ? 0 : 1;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Export this binning scheme to a file.
+////////////////////////////////////////////////////////////////////////
+/// export this binning scheme to a file
 ///
 /// \param[in] fileName name of the file
 ///
 /// returns true if the writing succeeded
-///
-/// export this binning scheme to a file
-///  - fileName: name of the xml file
-
-Int_t TUnfoldBinningXML::ExportXML(char const *fileName) const {
+Int_t TUnfoldBinningXMLV17::ExportXML(char const *fileName) const {
+  // export this binning scheme to a file
+  //   fileName: name of the xml file
   ofstream outFile(fileName);
   Int_t r=ExportXML(*this,outFile,kTRUE,kTRUE);
   outFile.close();
   return r;
 }
+

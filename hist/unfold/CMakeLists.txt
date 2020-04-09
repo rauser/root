@@ -16,11 +16,11 @@ ROOT_STANDARD_LIBRARY_PACKAGE(Unfold
     TUnfoldDensity.h
     TUnfoldSys.h
   SOURCES
-    src/TUnfold.cxx
-    src/TUnfoldBinning.cxx
-    src/TUnfoldBinningXML.cxx
-    src/TUnfoldDensity.cxx
-    src/TUnfoldSys.cxx
+    src/TUnfoldV17.cxx
+    src/TUnfoldBinningV17.cxx
+    src/TUnfoldBinningXMLV17.cxx
+    src/TUnfoldDensityV17.cxx
+    src/TUnfoldSysV17.cxx
   DICTIONARY_OPTIONS
     -writeEmptyRootPCM
   DEPENDENCIES

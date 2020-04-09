@@ -1,11 +1,23 @@
-// @(#)root/unfold:$Id$
-// Authors: Stefan Schmitt, Amnon Harel DESY and CERN, 11/08/11
+// Author: Stefan Schmitt, Amnon Harel
+// DESY and CERN, 11/08/11
 
-/** \class TUnfoldDensity
-\ingroup Unfold
+//  Version 17.9, parallel to changes in TUnfold
+//
+//  History:
+//    Version 17.8, new method GetDXDY()
+//    Version 17.7, with bug-fix for curvature regularisation
+//    Version 17.6, with updated doxygen comments and bug-fixes in TUnfoldBinning
+//    Version 17.5, bug fix in TUnfold also corrects GetEmatrixSysUncorr()
+//    Version 17.4, in parallel to changes in TUnfoldBinning
+//    Version 17.3, in parallel to changes in TUnfoldBinning
+//    Version 17.2, with new options 'N' and 'c' for axis regularisation steering
+//    Version 17.1, add scan type RhoSquare, small bug fixes with useAxisBinning
+//    Version 17.0, support for density regularisation, complex binning schemes, tau scan
+
+/** \class TUnfoldDensityV17
 An algorithm to unfold distributions from detector to truth level
 
-TUnfoldDensity is used to decompose a measurement y into several sources x,
+TUnfoldDensity is used to decompose a measurement y into several sources x, 
 given the measurement uncertainties, background b and a matrix of migrations A.
 The method can be applied to a large number of problems,
 where the measured distribution y is a linear superposition
@@ -19,91 +31,92 @@ uncertainties. Complex, multidimensional arrangements of signal and
 background bins are managed with the help of the class TUnfoldBinning.
 
 If you use this software, please consider the following citation
-
+<br/>
 <b>S.Schmitt, JINST 7 (2012) T10003 [arXiv:1205.6201]</b>
-
-Detailed documentation and updates are available on
+<br/>
+Detailed documentation and updates are available on 
 http://www.desy.de/~sschmitt
 
-### Brief recipe to use TUnfoldSys:
-
-  - Set up binning schemes for the truth and measured
+<h3>Brief recipy to use TUnfoldSys:</h3>
+<ul>
+<li>Set up binning schemes for the truth and measured
 distributions. The binning schemes may be coded in the XML language,
-for reading use TUnfoldBinningXML.
-  - A matrix (truth,reconstructed) is given as a two-dimensional histogram
-    as argument to the constructor of TUnfold
-  - A vector of measurements is given as one-dimensional histogram using
-    the SetInput() method
-  - Repeated calls to SubtractBackground() to specify background sources
-  - Repeated calls to AddSysError() to specify systematic uncertainties
-    - The unfolding is performed
-
-    - either once with a fixed parameter tau, method DoUnfold(tau)
-    - or multiple times in a scan to determine the best choice of tau,
-      method ScanLCurve()
-    - or multiple times in a scan to determine the best choice of tau,
-      method ScanTau()
-
-  - Unfolding results are retrieved using various GetXXX() methods
-
+for reading use TUnfoldBinningXML.</li>
+<li>A matrix (truth,reconstructed) is given as a two-dimensional histogram
+  as argument to the constructor of TUnfold</li>
+<li>A vector of measurements is given as one-dimensional histogram using
+  the SetInput() method</li>
+<li>Repeated calls to SubtractBackground() to specify background
+sources</li>
+<li>Repeated calls to AddSysError() to specify systematic uncertainties
+<li>The unfolding is performed
+<ul>
+<li>either once with a fixed parameter tau, method DoUnfold(tau)</li>
+<li>or multiple times in a scan to determine the best chouce of tau,
+     method ScanLCurve()</li>
+<li>or multiple times in a scan to determine the best chouce of tau,
+     method ScanTau()</li>
+</ul>
+<li>Unfolding results are retrieved using various GetXXX() methods
+</ul>
 A detailed documentation of the various GetXXX() methods to control
 systematic uncertainties is given with the method TUnfoldSys.
 
-### Why to use complex binning schemes
+<h3>Why to use complex binning schemes</h3>
 
 in literature on unfolding, the "standard" test case is a
 one-dimensional distribution without underflow or overflow bins.
 The migration matrix is almost diagonal.
-
+<br/>
 <b>This "standard" case is rarely realized for real problems.</b>
-
+<br/>
 Often one has to deal with multi-dimensional distributions.
 In addition, there are underflow and overflow bins
-or other background bins, possibly determined with the help of auxiliary
+or other background bins, possibly determined with the help of auxillary
 measurements.
-
+<br/>
 In TUnfoldDensity, such complex binning schemes are handled with the help
 of the class TUnfoldBinning. For both the measurement and the truth
 there is a tree structure. The tree nodes may correspond to single
 bins (e.g. nuisance parameters) or may hold multi-dimensional distributions.
-
+<br/>
 For example, the "measurement" tree could have two leaves, one for
-the primary distribution and one for auxiliary measurements.
+the primary distribution and one for auxillary measurements.
 Similarly, the "truth" tree could have two leaves, one for the
 signal and one for the background.
 Each of the leaves may then have a multi-dimensional distribution.
-
+<br/>
 The class TUnfoldBinning takes care to map all bins of the
 "measurement" to a one-dimensional vector y.
 Similarly, the "truth" bins are mapped to the vector x.
 
-### How to choose the regularisation settings
+<h3>How to choose the regularisation settings</h3>
 
 In TUnfoldDensity, two methods are implemented to determine tau**2
-
-  1. ScanLcurve()  locate the tau where the L-curve plot has a "kink"
-     this function is implemented in the TUnfold class
-  2. ScanTau() finds the solution such that some variable
-     (e.g. global correlation coefficient) is minimized.
-     This function is implemented in the TUnfoldDensity class
-
+<ol>
+<li>ScanLcurve()  locate the tau where the L-curve plot has a "kink"
+this function is implemented in the TUnfold class</li>
+<li>ScanTau() finds the solution such that some variable
+(e.g. global correlation coefficient) is minimized.
+This function is implemented in the TUnfoldDensity class</li>
+</ol>
 Each of the algorithms has its own advantages and disadvantages.
 The algorithm (1) does not work if the input data are too similar to the
 MC prediction. Typical no-go cases of the L-curve scan are:
-
-  - the number of measurements is too small (e.g. ny=nx)
-  - the input data have no statistical fluctuations
+<ul>
+<li>the number of measurements is too small (e.g. ny=nx)
+<li>the input data have no statistical fluctuations
  [identical MC events are used to fill the matrix of migrations
  and the vector y for a "closure test"]
-
+</ul>
 The algorithm (2) only works if the variable does have a real minimum
-as a function of tau. If global correlations are minimized, the situation
+as a function of tau. If global correlations are minimized, the situation 
 is as follows:
 The matrix of migration typically introduces negative correlations.
 The area constraint introduces some positive correlation.
 Regularisation on the "size" introduces no correlation.
 Regularisation on 1st or 2nd derivatives adds positive correlations.
-
+<br/>
 For these reasons, "size" regularisation does not work well with
 the tau-scan: the higher tau, the smaller rho, but there is no minimum.
 As a result, large values of tau (too strong regularisation) are found.
@@ -111,17 +124,18 @@ In contrast, the tau-scan is expected to work better with 1st or 2nd
 derivative regularisation, because at some point the negative
 correlations from migrations are approximately cancelled by the
 positive correlations from the regularisation conditions.
-
+<br/>
 whichever algorithm is used, the output has to be checked:
+<ol>
+<li>The L-curve should have approximate L-shape
+and the final choice of tau should not be at the very edge of the
+scanned region</li>
+<li>The scan result should have a well-defined minimum and the
+final choice of tau should sit right in the minimum</li>
+</ol>
+*/
 
-  1. The L-curve should have approximate L-shape
-     and the final choice of tau should not be at the very edge of the
-     scanned region
-  2. The scan result should have a well-defined minimum and the
-     final choice of tau should sit right in the minimum
-
-
---------------------------------------------------------------------------------
+/*
   This file is part of TUnfold.
 
   TUnfold is free software: you can redistribute it and/or modify
@@ -136,16 +150,6 @@ whichever algorithm is used, the output has to be checked:
 
   You should have received a copy of the GNU General Public License
   along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
-
-<b>Version 17.6, with updated doxygen comments and bug-fixes in TUnfoldBinning</b>
-
-#### History:
-  - Version 17.5, bug fix in TUnfold also corrects GetEmatrixSysUncorr()
-  - Version 17.4, in parallel to changes in TUnfoldBinning
-  - Version 17.3, in parallel to changes in TUnfoldBinning
-  - Version 17.2, with new options 'N' and 'c' for axis regularisation steering
-  - Version 17.1, add scan type RhoSquare, small bug fixes with useAxisBinning
-  - Version 17.0, support for density regularisation, complex binning schemes, tau scan
 */
 
 #include "TUnfoldDensity.h"
@@ -160,9 +164,9 @@ whichever algorithm is used, the output has to be checked:
 using namespace std;
 #endif
 
-ClassImp(TUnfoldDensity);
+ClassImp(TUnfoldDensityV17)
 
-TUnfoldDensity::~TUnfoldDensity(void)
+TUnfoldDensityV17::~TUnfoldDensityV17(void)
 {
    // clean up
    if(fOwnedOutputBins) delete fOwnedOutputBins;
@@ -170,10 +174,10 @@ TUnfoldDensity::~TUnfoldDensity(void)
    if(fRegularisationConditions) delete fRegularisationConditions;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Only for use by root streamer or derived classes.
-
-TUnfoldDensity::TUnfoldDensity(void)
+////////////////////////////////////////////////////////////////////////
+/// only for use by root streamer or derived classes
+///
+TUnfoldDensityV17::TUnfoldDensityV17(void)
 {
    fConstOutputBins=0;
    fConstInputBins=0;
@@ -182,12 +186,12 @@ TUnfoldDensity::TUnfoldDensity(void)
    fRegularisationConditions=0;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Eet up response matrix A, uncorrelated uncertainties of A,
-/// regularisation scheme and binning schemes.
+////////////////////////////////////////////////////////////////////////
+/// set up response matrix A, uncorrelated uncertainties of A, 
+/// regularisation scheme and binning schemes
 ///
 /// \param[in] hist_A matrix that describes the migrations
-/// \param[in] histmap mapping of the histogram axes to the unfolding output
+/// \param[in] histmap mapping of the histogram axes to the unfolding output 
 /// \param[in] regmode (default=kRegModeSize) global regularisation mode
 /// \param[in] constraint (default=kEConstraintArea) type of constraint
 /// \param[in] densityMode (default=kDensityModeBinWidthAndUser)
@@ -195,30 +199,29 @@ TUnfoldDensity::TUnfoldDensity(void)
 /// \param[in] outputBins (default=0) binning scheme for truth (unfolding output)
 /// \param[in] inputBins (default=0) binning scheme for measurement (unfolding
 /// input)
-/// \param[in] regularisationDistribution (default=0) selection of
+/// \param[in] regularisationDistribution (default=0) selectin of
 /// regularized distribution
 /// \param[in] regularisationAxisSteering (default=0) detailed
-/// regularisation steering for selected distribution
+/// regularisation steeringfor selected distribution
 ///
 /// The parameters <b>hist_A, histmap, constraint</b> are
 /// explained with the TUnfoldSys constructor.
-///
+/// <br/>
 /// The parameters <b>outputBins,inputBins</b> set the binning
 /// schemes. If these arguments are zero, simple binning schemes are
 /// constructed which correspond to the axes of the histogram
 /// <b>hist_A</b>.
-///
+/// <br/>
 /// The parameters
 /// <b>regmode, densityMode, regularisationDistribution, regularisationAxisSteering</b>
 /// together control how the initial matrix L of regularisation conditions
 /// is constructed. as explained in RegularizeDistribution().
-
-TUnfoldDensity::TUnfoldDensity
+TUnfoldDensityV17::TUnfoldDensityV17
 (const TH2 *hist_A, EHistMap histmap,ERegMode regmode,EConstraint constraint,
- EDensityMode densityMode,const TUnfoldBinning *outputBins,
- const TUnfoldBinning *inputBins,const char *regularisationDistribution,
+ EDensityMode densityMode,const TUnfoldBinningV17 *outputBins,
+ const TUnfoldBinningV17 *inputBins,const char *regularisationDistribution,
  const char *regularisationAxisSteering) :
-   TUnfoldSys(hist_A,histmap,kRegModeNone,constraint)
+   TUnfoldSys(hist_A,histmap,kRegModeNone,constraint) 
 {
    fRegularisationConditions=0;
    // set up binning schemes
@@ -236,7 +239,7 @@ TUnfoldDensity::TUnfoldDensity
       // underflow and overflow are included in the binning scheme
       // They may be used on generator level
       fOwnedOutputBins =
-         new TUnfoldBinning(*genAxis,1,1);
+         new TUnfoldBinningV17(*genAxis,1,1);
       fConstOutputBins = fOwnedOutputBins;
    }
    // check whether binning scheme is valid
@@ -250,7 +253,7 @@ TUnfoldDensity::TUnfoldDensity
       // underflow and overflow are not included in the binning scheme
       // They are still used to count events which have not been reconstructed
       fOwnedInputBins =
-         new TUnfoldBinning(*detAxis,0,0);
+         new TUnfoldBinningV17(*detAxis,0,0);
       fConstInputBins = fOwnedInputBins;
    }
    if(fConstInputBins->GetParentNode()) {
@@ -282,20 +285,21 @@ TUnfoldDensity::TUnfoldDensity
    // report detailed list of excluded bins
    for (Int_t ix = 0; ix <= nOut+1; ix++) {
       if(fHistToX[ix]<0) {
-   Info("TUnfold","*NOT* unfolding bin %s",(char const *)GetOutputBinName(ix));
+	Info("TUnfold","*NOT* unfolding bin %s",
+             (char const *)GetOutputBinName(ix));
       }
    }
 
    // set up the regularisation here
    if(regmode !=kRegModeNone) {
       RegularizeDistribution
-   (regmode,densityMode,regularisationDistribution,
-    regularisationAxisSteering);
+	(regmode,densityMode,regularisationDistribution,
+	 regularisationAxisSteering);
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Get bin name of an output bin.
+////////////////////////////////////////////////////////////////////////
+/// Get bin name of an outpt bin
 ///
 /// \param[in] iBinX bin number
 ///
@@ -303,32 +307,31 @@ TUnfoldDensity::TUnfoldDensity
 /// entries in the binning scheme and includes information about the
 /// bin borders etc.
 
-TString TUnfoldDensity::GetOutputBinName(Int_t iBinX) const {
+TString TUnfoldDensityV17::GetOutputBinName(Int_t iBinX) const {
    if(!fConstOutputBins) return TUnfold::GetOutputBinName(iBinX);
    else return fConstOutputBins->GetBinName(iBinX);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Density correction factor for a given bin.
+////////////////////////////////////////////////////////////////////////
+/// density correction factor for a given bin
 ///
 /// \param[in]  densityMode type of factor to calculate
 /// \param[in]  iBin  bin number
 ///
 /// return a multiplicative factor, for scaling the regularisation
-/// conditions from this bin.
-///
+///  conditions from this bin.
+/// <br/>
 /// For densityMode=kDensityModeNone the factor is set to unity.
-/// For densityMode=kDensityModeBinWidth
+/// For densityMode=kDensityModeBinWidth 
 /// the factor is set to 1/binArea
 /// where the binArea is the product of the bin widths in all
 /// dimensions. If the width of a bin is zero or can not be
 /// determined, the factor is set to zero.
 /// For densityMode=kDensityModeUser the factor is determined from the
 ///  method TUnfoldBinning::GetBinFactor().
-/// For densityMode=kDensityModeBinWidthAndUser, the results of
+/// For densityMode=kDensityModeBinWidthAndUser, the results of 
 /// kDensityModeBinWidth and kDensityModeUser are multiplied.
-
-Double_t TUnfoldDensity::GetDensityFactor
+Double_t TUnfoldDensityV17::GetDensityFactor
 (EDensityMode densityMode,Int_t iBin) const
 {
    Double_t factor=1.0;
@@ -345,85 +348,84 @@ Double_t TUnfoldDensity::GetDensityFactor
    return factor;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Set up regularisation conditions.
+////////////////////////////////////////////////////////////////////////
+/// set up regularisation conditions
 ///
 /// \param[in] regmode basic regularisation mode (see class TUnfold)
-/// \param[in] densityMode how to apply bin-wise factors
+/// \param[in] densityMode how to apply bin-wise factors 
 /// \param[in] distribution  name of the TUnfoldBinning node for which
-/// the regularisation conditions shall be set (zero matches all nodes)
+/// the regularisation conditions shall be set (zero matches all nodes) 
 /// \param[in] axisSteering  regularisation fine-tuning
 ///
 /// <b>axisSteering</b> is a string with several tokens, separated by
-/// a semicolon: `"axisName[options];axisName[options];..."`.
-///
-///  - <b>axisName</b>:
-///    the name of an axis. The special name * matches all.
-///    So the argument <b>distribution</b> selects one (or all)
-///    distributions. Within the selected distribution(s), steering options may be
-///    specified for each axis (or for all axes) to define the
-///    regularisation conditions.
-///  - <b>options</b>
-///    one or several character as follows:
-///    - u : exclude underflow bin from derivatives along this axis
-///    - o : exclude overflow bin from derivatives along this axis
-///    - U : exclude underflow bin
-///    - O : exclude overflow bin
-///    - b : use bin width for derivative calculation
-///    - B : same as 'b', in addition normalize to average bin width
-///    - N : completely exclude derivatives along this axis
-///    - p : axis is periodic (e.g. azimuthal angle), so
-///          include derivatives built from combinations involving bins at
-///          both ends of the axis "wrap around"
-///
-/// example:  <b>axisSteering</b>=`"*[UOB]"` uses bin widths to calculate
+/// a semicolon: "axisName[options];axisName[options];...".
+/// <dl>
+/// <dt>axisName</dt>
+/// <dd>the name of an axis. The special name * matches all.
+/// So the argument <b>distribution</b> selects one (or all)
+/// distributions. Witin the selected distribution(s), steering options may be
+/// specified for each axis (or for all axes) to define the
+/// regularisation conditions.</dd>
+/// <dt>options</dt>
+/// <dd>one or several character as follows<br/>
+///  u : exclude underflow bin from derivatives along this axis<br/>
+///  o : exclude overflow bin from derivatives along this axis<br/>
+///  U : exclude underflow bin<br/>
+///  O : exclude overflow bin<br/>
+///  b : use bin width for derivative calculation<br/>
+///  B : same as 'b', in addition normalize to average bin width<br/>
+///  N : completely exclude derivatives along this axis<br/>
+///  p : axis is periodic (e.g. azimuthal angle), so
+///   include derivatives built from combinations involving bins at
+///   both ends of the axis "wrap around"
+/// </dd>
+/// </dl>
+/// example:  <b>axisSteering</b>="*[UOB]" uses bin widths to calculate
 /// derivatives but underflow/overflow bins are not regularized
-
-void TUnfoldDensity::RegularizeDistribution
+void TUnfoldDensityV17::RegularizeDistribution
 (ERegMode regmode,EDensityMode densityMode,const char *distribution,
  const char *axisSteering)
 {
-
+  
    RegularizeDistributionRecursive(GetOutputBinning(),regmode,densityMode,
                                    distribution,axisSteering);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Recursively add regularisation conditions for this node and its children.
+////////////////////////////////////////////////////////////////////////
+/// recursively add regularisation conditions for this node and its children
 ///
 /// \param[in] binning current node
 /// \param[in] regmode regularisation mode
 /// \param[in] densityMode type of regularisation scaling
 /// \param[in] distribution target distribution(s) name
 /// \param[in] axisSteering steering within the target distribution(s)
-
-void TUnfoldDensity::RegularizeDistributionRecursive
-(const TUnfoldBinning *binning,ERegMode regmode,
+void TUnfoldDensityV17::RegularizeDistributionRecursive
+(const TUnfoldBinningV17 *binning,ERegMode regmode,
  EDensityMode densityMode,const char *distribution,const char *axisSteering) {
    if((!distribution)|| !TString(distribution).CompareTo(binning->GetName())) {
       RegularizeOneDistribution(binning,regmode,densityMode,axisSteering);
    }
-   for(const TUnfoldBinning *child=binning->GetChildNode();child;
+   for(const TUnfoldBinningV17 *child=binning->GetChildNode();child;
        child=child->GetNextNode()) {
       RegularizeDistributionRecursive(child,regmode,densityMode,distribution,
                                       axisSteering);
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Regularize the distribution of the given node.
+////////////////////////////////////////////////////////////////////////
+/// regularize the distribution fof the given node
 ///
 /// \param[in] binning current node
 /// \param[in] regmode regularisation mode
 /// \param[in] densityMode type of regularisation scaling
 /// \param[in] axisSteering detailed steering for the axes of the distribution
 
-void TUnfoldDensity::RegularizeOneDistribution
-(const TUnfoldBinning *binning,ERegMode regmode,
+void TUnfoldDensityV17::RegularizeOneDistribution
+(const TUnfoldBinningV17 *binning,ERegMode regmode,
  EDensityMode densityMode,const char *axisSteering)
 {
 #ifdef DEBUG
-   cout<<"TUnfoldDensity::RegularizeOneDistribution node="
+   cout<<"TUnfoldDensityV17::RegularizeOneDistribution node="
        <<binning->GetName()<<" "<<regmode<<" "<<densityMode
        <<" "<<(axisSteering ? axisSteering : "")<<"\n";
 #endif
@@ -463,9 +465,9 @@ void TUnfoldDensity::RegularizeOneDistribution
        <<"\n";
 #endif
    Info("RegularizeOneDistribution","regularizing %s regMode=%d"
-   " densityMode=%d axisSteering=%s",
-   binning->GetName(),(Int_t) regmode,(Int_t)densityMode,
-   axisSteering ? axisSteering : "");
+	" densityMode=%d axisSteering=%s",
+	binning->GetName(),(Int_t) regmode,(Int_t)densityMode,
+	axisSteering ? axisSteering : "");
    Int_t startBin=binning->GetStartBin();
    Int_t endBin=startBin+ binning->GetDistributionNumberOfBins();
    std::vector<Double_t> factor(endBin-startBin);
@@ -490,7 +492,7 @@ void TUnfoldDensity::RegularizeOneDistribution
    }
 #ifdef DEBUG
    cout<<"after underflow/overflow bin removal "<<nbin<<"\n";
-#endif
+#endif   
    if(regmode==kRegModeSize) {
       Int_t nRegBins=0;
       // regularize all bins of the distribution, possibly excluding
@@ -511,7 +513,7 @@ void TUnfoldDensity::RegularizeOneDistribution
          Int_t directionMask=(1<<direction);
          if(isOptionGiven[7] & directionMask) {
 #ifdef DEBUG
-            cout<<"skip direction "<<direction<<"\n";
+            cout<<"skip direction "<<direction<<"\n"; 
 #endif
             continue;
          }
@@ -557,7 +559,7 @@ void TUnfoldDensity::RegularizeOneDistribution
                }
             } else if((regmode==kRegModeCurvature)&&(iPrev>=0)&&(iNext>=0)) {
                Double_t f0 = factor[iPrev-startBin];
-               Double_t f1 = -factor[bin-startBin];
+               Double_t f1 = -2.*factor[bin-startBin];
                Double_t f2 = factor[iNext-startBin];
                if(isOptionGiven[4] & directionMask) {
                   if((distPrev<0.)&&(distNext>0.)) {
@@ -565,7 +567,7 @@ void TUnfoldDensity::RegularizeOneDistribution
                      Double_t f=TMath::Power(binDistanceNormalisation,2.)/
                         (distPrev+distNext);
                      f0 *= f/distPrev;
-                     f1 *= f*(1./distPrev+1./distNext);
+                     f1 *= f*(0.5/distPrev+0.5/distNext);
                      f2 *= f/distNext;
                   } else {
                      f0=0.;
@@ -602,7 +604,7 @@ void TUnfoldDensity::RegularizeOneDistribution
 }
 
 ///////////////////////////////////////////////////////////////////////
-/// retrieve unfolding result as a new histogram
+/// retreive unfolding result as a new histogram
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -621,32 +623,34 @@ void TUnfoldDensity::RegularizeOneDistribution
 ///
 /// The <b>axisSteering</b> is defines as follows: "axis[mode];axis[mode];..."
 /// where:
-///
-///   - axis = name of an axis or *
-///   - mode = any combination of the letters CUO0123456789
-///
-///   - C collapse axis into one bin (add up results). If
-///     any of the numbers 0-9 are given in addition, only these bins are added up.
-///     Here bins are counted from zero, whereas in root, bins are counted
-///     from 1. Obviously, this only works for up to 10 bins.
-///   - U discard underflow bin
-///   - O discard overflow bin
-///
+/// <ul>
+/// <li>axis = name of an axis or *</li>
+/// <li>mode = any combination of the letters CUO0123456789
+/// <ul>
+/// <li>C collapse axis into one bin (add up results). If
+/// any of the numbers 0-9 are given in addition, only these bins are added up.
+/// Here bins are counted from zero, whereas in root, bins are counted
+/// from 1. Obviously, this only works for up to 10 bins.</li>
+/// <li>U discarde underflow bin</li>
+/// <li>O discarde overflow bin</li>
+/// </ul>
+/// </ul>
 /// examples: imagine the binning has two axis, named x and y.
-///
-///   - "*[UO]" exclude underflow and overflow bins for all axis.
-///     So here a TH2 is returned but all undeflow and overflow bins are empty
-///   - "x[UOC123]" integrate over the variable x but only using the
-///     bins 1,2,3 and not the underflow and overflow in x.
-///     Here a TH1 is returned, the axis is labelled "y" and
-///     the underflow and overflow (in y) are filled. However only the x-bins
-///     1,2,3 are used to determine the content.
-///   - "x[C];y[UO]" integrate over the variable x, including
-///     underflow and overflow but exclude underflow and overflow in y.
-///     Here a TH1 is returned, the axis is labelled "y". The underflow
-///     and overflow in y are empty.
+/// <ul>
+/// <li>"*[UO]" exclude underflow and overflow bins for all axis.
+/// So here a TH2 is returned but all undeflow and overflow bins are empty</li>
+/// <li>"x[UOC123]" integrate over the variable x but only using the
+/// bins 1,2,3 and not the underflow and overflow in x.
+/// Here a TH1 is returned, the axis is labelled "y" and
+/// the underflow and overflow (in y) are filled. However only the x-bins
+/// 1,2,3 are used to determine the content.</li>
+/// <li>"x[C];y[UO]" integrate over the variable x, including
+/// underflow and overflow but exclude underflow and overflow in y.
+/// Here a TH1 is returned, the axis is labelled "y". The underflow
+/// and overflow in y are empty.</li>
+/// </ul>
 
-TH1 *TUnfoldDensity::GetOutput
+TH1 *TUnfoldDensityV17::GetOutput
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning) const
@@ -664,8 +668,8 @@ TH1 *TUnfoldDensity::GetOutput
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve bias vector as a new histogram.
+////////////////////////////////////////////////////////////////////////
+/// retreive bias vector as a new histogram
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -677,8 +681,7 @@ TH1 *TUnfoldDensity::GetOutput
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH1 *TUnfoldDensity::GetBias
+TH1 *TUnfoldDensityV17::GetBias
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning) const
@@ -694,8 +697,8 @@ TH1 *TUnfoldDensity::GetBias
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve unfolding result folded back as a new histogram.
+////////////////////////////////////////////////////////////////////////
+/// retreive unfolding result folded back as a new histogram
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -709,8 +712,7 @@ TH1 *TUnfoldDensity::GetBias
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH1 *TUnfoldDensity::GetFoldedOutput
+TH1 *TUnfoldDensityV17::GetFoldedOutput
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning,Bool_t addBgr) const
@@ -729,11 +731,11 @@ TH1 *TUnfoldDensity::GetFoldedOutput
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve a background source in a new histogram.
+////////////////////////////////////////////////////////////////////////
+/// retreive a background source in a new histogram
 ///
 /// \param[in] histogramName name of the histogram
-/// \param[in] bgrSource the background source to retrieve
+/// \param[in] bgrSource the background source to retreive
 /// \param[in] histogramTitle (default=0) title of the histogram
 /// \param[in] distributionName (default=0) identifier of the distribution to be extracted
 /// \param[in] axisSteering (default=0) detailed steering within the extracted
@@ -745,8 +747,7 @@ TH1 *TUnfoldDensity::GetFoldedOutput
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH1 *TUnfoldDensity::GetBackground
+TH1 *TUnfoldDensityV17::GetBackground
 (const char *histogramName,const char *bgrSource,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,Bool_t useAxisBinning,
  Int_t includeError) const
@@ -762,8 +763,8 @@ TH1 *TUnfoldDensity::GetBackground
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve input distribution in a new histogram.
+////////////////////////////////////////////////////////////////////////
+/// retreive input distribution in a new histogram
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -775,8 +776,8 @@ TH1 *TUnfoldDensity::GetBackground
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH1 *TUnfoldDensity::GetInput
+/// 
+TH1 *TUnfoldDensityV17::GetInput
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning) const
@@ -792,8 +793,8 @@ TH1 *TUnfoldDensity::GetInput
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve global correlation coefficients including all uncertainty sources.
+////////////////////////////////////////////////////////////////////////
+/// retreive global correlation coefficients including all uncertainty sources
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -808,8 +809,7 @@ TH1 *TUnfoldDensity::GetInput
 /// description of the arguments. The inverse of the covariance matrix
 /// is stored in a new histogram returned by <b>ematInv</b> if that
 /// pointer is non-zero.
-
-TH1 *TUnfoldDensity::GetRhoItotal
+TH1 *TUnfoldDensityV17::GetRhoItotal
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning,TH2 **ematInv) {
@@ -842,9 +842,9 @@ TH1 *TUnfoldDensity::GetRhoItotal
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve global correlation coefficients including input
-/// (statistical) and background uncertainties.
+////////////////////////////////////////////////////////////////////////
+/// retreive global correlation coefficients including input
+/// (statistical) and background uncertainties
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -859,8 +859,7 @@ TH1 *TUnfoldDensity::GetRhoItotal
 /// description of the arguments. The inverse of the covariance matrix
 /// is stored in a new histogram returned by <b>ematInv</b> if that
 /// pointer is non-zero.
-
-TH1 *TUnfoldDensity::GetRhoIstatbgr
+TH1 *TUnfoldDensityV17::GetRhoIstatbgr
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning,TH2 **ematInv) {
@@ -893,8 +892,8 @@ TH1 *TUnfoldDensity::GetRhoIstatbgr
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve a correlated systematic 1-sigma shift.
+////////////////////////////////////////////////////////////////////////
+/// retreive a correlated systematic 1-sigma shift
 ///
 /// \param[in] source identifier of the systematic uncertainty source
 /// \param[in] histogramName name of the histogram
@@ -908,7 +907,7 @@ TH1 *TUnfoldDensity::GetRhoIstatbgr
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
 
-TH1 *TUnfoldDensity::GetDeltaSysSource
+TH1 *TUnfoldDensityV17::GetDeltaSysSource
 (const char *source,const char *histogramName,
  const char *histogramTitle,const char *distributionName,
  const char *axisSteering,Bool_t useAxisBinning) {
@@ -926,9 +925,9 @@ TH1 *TUnfoldDensity::GetDeltaSysSource
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve systematic 1-sigma shift corresponding to a background
-/// scale uncertainty.
+////////////////////////////////////////////////////////////////////////
+/// retreive systematic 1-sigma shift corresponding to a background
+/// scale uncertainty
 ///
 /// \param[in] bgrSource identifier of the background
 /// \param[in] histogramName name of the histogram
@@ -941,8 +940,7 @@ TH1 *TUnfoldDensity::GetDeltaSysSource
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH1 *TUnfoldDensity::GetDeltaSysBackgroundScale
+TH1 *TUnfoldDensityV17::GetDeltaSysBackgroundScale
 (const char *bgrSource,const char *histogramName,
  const char *histogramTitle,const char *distributionName,
  const char *axisSteering,Bool_t useAxisBinning) {
@@ -960,9 +958,9 @@ TH1 *TUnfoldDensity::GetDeltaSysBackgroundScale
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve 1-sigma shift corresponding to the previously specified uncertainty
-/// on tau.
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/// retreive1-sigma shift corresponding to the previously specified uncertainty on tau
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -974,8 +972,7 @@ TH1 *TUnfoldDensity::GetDeltaSysBackgroundScale
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH1 *TUnfoldDensity::GetDeltaSysTau
+TH1 *TUnfoldDensityV17::GetDeltaSysTau
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,Bool_t useAxisBinning)
 {
@@ -993,8 +990,8 @@ TH1 *TUnfoldDensity::GetDeltaSysTau
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve correlation coefficients, including all uncertainties.
+////////////////////////////////////////////////////////////////////////
+/// retreive correlation coefficients, including all uncertainties
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -1006,8 +1003,7 @@ TH1 *TUnfoldDensity::GetDeltaSysTau
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH2 *TUnfoldDensity::GetRhoIJtotal
+TH2 *TUnfoldDensityV17::GetRhoIJtotal
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning)
@@ -1021,7 +1017,7 @@ TH2 *TUnfoldDensity::GetRhoIJtotal
          if(e_i>0.0) e_i=TMath::Sqrt(e_i);
          else e_i=0.0;
          for(Int_t j=0;j<=r->GetNbinsY()+1;j++) {
-      if(i==j) continue;
+	   if(i==j) continue;
             Double_t e_j=r->GetBinContent(j,j);
             if(e_j>0.0) e_j=TMath::Sqrt(e_j);
             else e_j=0.0;
@@ -1034,19 +1030,19 @@ TH2 *TUnfoldDensity::GetRhoIJtotal
          }
       }
       for(Int_t i=0;i<=r->GetNbinsX()+1;i++) {
-   if(r->GetBinContent(i,i)>0.0) {
-     r->SetBinContent(i,i,1.0);
-   } else {
-     r->SetBinContent(i,i,0.0);
-   }
+	if(r->GetBinContent(i,i)>0.0) {
+	  r->SetBinContent(i,i,1.0);
+	} else {
+	  r->SetBinContent(i,i,0.0);
+	}
       }
    }
    return r;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve covariance contribution from uncorrelated (statistical)
-/// uncertainties of the response matrix.
+                           
+////////////////////////////////////////////////////////////////////////
+/// retreive covaraince contribution from uncorrelated (statistical)
+/// uncertainties of the response matrix 
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -1058,8 +1054,7 @@ TH2 *TUnfoldDensity::GetRhoIJtotal
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH2 *TUnfoldDensity::GetEmatrixSysUncorr
+TH2 *TUnfoldDensityV17::GetEmatrixSysUncorr
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning)
@@ -1075,8 +1070,8 @@ TH2 *TUnfoldDensity::GetEmatrixSysUncorr
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieve covariance contribution from uncorrelated background uncertainties.
+////////////////////////////////////////////////////////////////////////
+/// retreive covariance contribution from uncorrelated background uncertainties
 ///
 /// \param[in] bgrSource identifier of the background
 /// \param[in] histogramName name of the histogram
@@ -1089,8 +1084,7 @@ TH2 *TUnfoldDensity::GetEmatrixSysUncorr
 ///
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
-
-TH2 *TUnfoldDensity::GetEmatrixSysBackgroundUncorr
+TH2 *TUnfoldDensityV17::GetEmatrixSysBackgroundUncorr
 (const char *bgrSource,const char *histogramName,
  const char *histogramTitle,const char *distributionName,
  const char *axisSteering,Bool_t useAxisBinning)
@@ -1106,9 +1100,9 @@ TH2 *TUnfoldDensity::GetEmatrixSysBackgroundUncorr
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Get covariance contribution from the input uncertainties (data
-/// statistical uncertainties).
+////////////////////////////////////////////////////////////////////////
+/// get covariance contribution from the input uncertainties (data
+/// statistical uncertainties)
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -1121,7 +1115,7 @@ TH2 *TUnfoldDensity::GetEmatrixSysBackgroundUncorr
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
 
-TH2 *TUnfoldDensity::GetEmatrixInput
+TH2 *TUnfoldDensityV17::GetEmatrixInput
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning)
@@ -1137,8 +1131,8 @@ TH2 *TUnfoldDensity::GetEmatrixInput
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Get matrix of probabilities in a new histogram.
+////////////////////////////////////////////////////////////////////////
+/// get matrix of probabilities in a new histogram
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -1147,20 +1141,40 @@ TH2 *TUnfoldDensity::GetEmatrixInput
 ///
 /// returns a new histogram. if histogramTitle is null, choose a title
 /// automatically.
-
-TH2 *TUnfoldDensity::GetProbabilityMatrix
+TH2 *TUnfoldDensityV17::GetProbabilityMatrix
 (const char *histogramName,const char *histogramTitle,
  Bool_t useAxisBinning) const
 {
    TH2 *r=TUnfoldBinning::CreateHistogramOfMigrations
       (fConstOutputBins,fConstInputBins,histogramName,
        useAxisBinning,useAxisBinning,histogramTitle);
-   TUnfold::GetProbabilityMatrix(r,kHistMapOutputHoriz);
+   TUnfoldV17::GetProbabilityMatrix(r,kHistMapOutputHoriz);
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Get covariance matrix including all contributions.
+////////////////////////////////////////////////////////////////////////
+/// get matrix DX/DY in a new histogram
+///
+/// \param[in] histogramName name of the histogram
+/// \param[in] histogramTitle (default=0) title of the histogram
+/// \param[in] useAxisBinning (default=true) if set to true, try to extract a histogram with
+/// proper binning and axis labels
+///
+/// returns a new histogram. if histogramTitle is null, choose a title
+/// automatically.
+TH2 *TUnfoldDensityV17::GetDXDY
+(const char *histogramName,const char *histogramTitle,
+ Bool_t useAxisBinning) const
+{
+   TH2 *r=TUnfoldBinning::CreateHistogramOfMigrations
+      (fConstOutputBins,fConstInputBins,histogramName,
+       useAxisBinning,useAxisBinning,histogramTitle);
+   TUnfoldV17::GetDXDY(r);
+   return r;
+}
+
+////////////////////////////////////////////////////////////////////////
+/// get covariance matrix including all contributions
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -1173,7 +1187,7 @@ TH2 *TUnfoldDensity::GetProbabilityMatrix
 /// returns a new histogram. See method GetOutput() for a detailed
 /// description of the arguments
 
-TH2 *TUnfoldDensity::GetEmatrixTotal
+TH2 *TUnfoldDensityV17::GetEmatrixTotal
 (const char *histogramName,const char *histogramTitle,
  const char *distributionName,const char *axisSteering,
  Bool_t useAxisBinning)
@@ -1187,10 +1201,10 @@ TH2 *TUnfoldDensity::GetEmatrixTotal
    }
    if(binMap) delete [] binMap;
    return r;
-}
+}   
 
-////////////////////////////////////////////////////////////////////////////////
-/// Access matrix of regularisation conditions in a new histogram.
+////////////////////////////////////////////////////////////////////////
+/// access matrix of regularisation conditions in a new histogram
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
@@ -1200,10 +1214,10 @@ TH2 *TUnfoldDensity::GetEmatrixTotal
 /// returns a new histogram. if histogramTitle is null, choose a title
 /// automatically.
 
-TH2 *TUnfoldDensity::GetL
+TH2 *TUnfoldDensityV17::GetL
 (const char *histogramName,const char *histogramTitle,Bool_t useAxisBinning)
 {
-   if(fRegularisationConditions &&
+   if(fRegularisationConditions && 
       (fRegularisationConditions->GetEndBin()-
        fRegularisationConditions->GetStartBin()!= fL->GetNrows())) {
       Warning("GetL",
@@ -1223,27 +1237,26 @@ TH2 *TUnfoldDensity::GetL
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Get regularisation conditions multiplied by result vector minus bias
-///   L(x-biasScale*biasVector).
+////////////////////////////////////////////////////////////////////////
+/// get regularisation conditions multiplied by result vector minus bias
+///   L(x-biasScale*biasVector)
 ///
 /// \param[in] histogramName name of the histogram
 /// \param[in] histogramTitle (default=0) title of the histogram
 ///
 /// returns a new histogram.
-/// This is a measure of the level of regularization required per
+/// This is a measure of the level of regulartisation required per
 /// regularisation condition.
 /// If there are (negative or positive) spikes,
 /// these regularisation conditions dominate
-/// over the other regularisation conditions and may introduce
+/// over the other regularisation conditions and may introduce 
 /// the largest biases.
-
-TH1 *TUnfoldDensity::GetLxMinusBias
+TH1 *TUnfoldDensityV17::GetLxMinusBias
 (const char *histogramName,const char *histogramTitle)
 {
    TMatrixD dx(*GetX(), TMatrixD::kMinus, fBiasScale * (*fX0));
    TMatrixDSparse *Ldx=MultiplyMSparseM(fL,&dx);
-   if(fRegularisationConditions &&
+   if(fRegularisationConditions && 
       (fRegularisationConditions->GetEndBin()-
        fRegularisationConditions->GetStartBin()!= fL->GetNrows())) {
       Warning("GetLxMinusBias",
@@ -1269,15 +1282,14 @@ TH1 *TUnfoldDensity::GetLxMinusBias
    return r;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Locate a binning node for the input (measured) quantities.
+////////////////////////////////////////////////////////////////////////
+/// locate a binning node for the input (measured) quantities
 ///
 /// \param[in] distributionName (default=0) distribution to look
 /// for. if zero, return the root node
 ///
 /// returns: pointer to a TUnfoldBinning object or zero if not found
-
-const TUnfoldBinning *TUnfoldDensity::GetInputBinning
+const TUnfoldBinning *TUnfoldDensityV17::GetInputBinning
 (const char *distributionName) const
 {
    // find binning scheme, input bins
@@ -1285,15 +1297,15 @@ const TUnfoldBinning *TUnfoldDensity::GetInputBinning
    return fConstInputBins->FindNode(distributionName);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Locate a binning node for the unfolded (truth level) quantities.
+////////////////////////////////////////////////////////////////////////
+/// locate a binning node for the unfolded (truth level) quantities
 ///
 /// \param[in] distributionName (default=0) distribution to look
 /// for. if zero, return the root node
 ///
 /// returns: pointer to a TUnfoldBinning object or zero if not found
 
-const TUnfoldBinning *TUnfoldDensity::GetOutputBinning
+const TUnfoldBinning *TUnfoldDensityV17::GetOutputBinning
 (const char *distributionName) const
 {
    // find binning scheme, output bins
@@ -1301,8 +1313,8 @@ const TUnfoldBinning *TUnfoldDensity::GetOutputBinning
    return fConstOutputBins->FindNode(distributionName);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Scan a function wrt tau and determine the minimum.
+////////////////////////////////////////////////////////////////////////
+/// scan a function wrt tau and determine the minimum
 ///
 /// \param[in] nPoint number of points to be scanned
 /// \param[in] tauMin smallest tau value to study
@@ -1316,30 +1328,29 @@ const TUnfoldBinning *TUnfoldDensity::GetOutputBinning
 /// \param[out] logTauYPlot for monitoring, L-curve(Y) as a function of log(tau)
 ///
 /// Return value: the coordinate number on the curve <b>scanResult</b>
-/// which corresponds to the minimum
-///
+///     which corresponds to the minimum
+/// <br/>
 /// The function is scanned by repeating the following steps <b>nPoint</b>
-/// times
-///
-///   1. Choose a value of tau
-///   2. Perform the unfolding for this choice of tau, DoUnfold(tau)
-///   3. Determine the scan variable GetScanVariable()
-///
+///     times
+/// <ol>
+/// <li>Choose a value of tau</li>
+/// <li>Perform the unfolding for this choice of tau, DoUnfold(tau)</li>
+/// <li>Determinethe scan variable GetScanVariable()</li>
+/// </ol>
 /// The method  GetScanVariable() defines scans of correlation
 /// coefficients, where <b>mode</b> is chosen from the enum
 /// EScanTauMode. In addition one may set <b>distribution</b>
 /// and/or <b>projectionMode</b> to refine the calculation of
-/// correlations (e.g. restrict the calculation to the signal
-/// distribution and/or exclude underflow and overflow bins).
+/// correlations (e.g. restrict the calcuation to the signal
+///     distribution and/or exclude underflow and overflow bins).
 /// See the documentation of GetScanVariable() for details.
 /// Alternative scan variables may be defined by overriding the
-/// GetScanVariable() method.
-///
-/// Automatic choice of scan range: if (tauMin,tauMax) do not
-/// correspond to a valid tau range (e.g. tauMin=tauMax=0.0) then
-/// the tau range is determined automatically. Use with care!
-
-Int_t TUnfoldDensity::ScanTau
+///     GetScanVariable() method.
+/// <br>
+///  Automatic choice of scan range: if (tauMin,tauMax) do not
+///     correspond to a valid tau range (e.g. tauMin=tauMax=0.0) then
+///     the tau range is determined automatically. Use with care!
+Int_t TUnfoldDensityV17::ScanTau
 (Int_t nPoint,Double_t tauMin,Double_t tauMax,TSpline **scanResult,
  Int_t mode,const char *distribution,const char *axisSteering,
  TGraph **lCurvePlot,TSpline **logTauXPlot,TSpline **logTauYPlot)
@@ -1363,24 +1374,24 @@ Int_t TUnfoldDensity::ScanTau
    //      and store the result in
    //        curve
    //  (3) return the result in scanResult
-
+   
    //==========================================================
    //  (1) do the unfolding for nPoint-1 points
    //      and store the results in
    //        curve
    //    (1a) store minimum and maximum tau to curve
-
+   
    if((tauMin<=0)||(tauMax<=0.0)||(tauMin>=tauMax)) {
       // here no range is given, has to be determined automatically
-      // the maximum tau is determined from the chi**2 values
-      // observed from unfolding without regularization
-
+      // the maximum tau is determined from the chi**2 values 
+      // observed from unfolding without regulatisation
+      
       // first unfolding, without regularisation
       DoUnfold(0.0);
 
       // if the number of degrees of freedom is too small, create an error
       if(GetNdf()<=0) {
-         Error("ScanTau","too few input bins, NDF<=0 %d",GetNdf());
+         Error("ScanTau","too few input bins, NDF<=0 %d",GetNdf());  
       }
       Double_t X0=GetLcurveX();
       Double_t Y0=GetLcurveY();
@@ -1451,7 +1462,7 @@ Int_t TUnfoldDensity::ScanTau
       // locate minimum
       Double_t logTauYMin=(*i0).first;
       Double_t yMin=(*i0).second;
-      for (; i0 != curve.end(); ++i0) {
+      for(;i0!=curve.end();i0++) {
          if((*i0).second<yMin) {
             yMin=(*i0).second;
             logTauYMin=(*i0).first;
@@ -1463,7 +1474,7 @@ Int_t TUnfoldDensity::ScanTau
       i1=i0;
       Double_t distMax=0.0;
       Double_t logTau=0.0;
-      for (++i1; i1 != curve.end(); ++i1) {
+      for(i1++;i1!=curve.end();i1++) {
          Double_t dist;
          // check size of rho interval
          dist=TMath::Abs((*i0).first-(*i1).first)
@@ -1495,7 +1506,7 @@ Int_t TUnfoldDensity::ScanTau
    Double_t *cTi=new Double_t[curve.size()];
    Double_t *cCi=new Double_t[curve.size()];
    Int_t n=0;
-   for (TauScan_t::const_iterator i = curve.begin(); i != curve.end(); ++i) {
+   for(TauScan_t::const_iterator i=curve.begin();i!=curve.end();i++) {
       cTi[n]=(*i).first;
       cCi[n]=(*i).second;
       n++;
@@ -1522,11 +1533,11 @@ Int_t TUnfoldDensity::ScanTau
          xMin=cTi[i];
       }
       // find minimum for x[i]<x<x[i+1]
-      // get spline coefficients and solve equation
+      // get spline coefficiencts and solve equation
       //   derivative(x)==0
       Double_t x,y,b,c,d;
       splineC->GetCoeff(i,x,y,b,c,d);
-      // coefficients of quadratic equation
+      // coefficiencts of quadratic equation
       Double_t m_p_half=-c/(3.*d);
       Double_t q=b/(3.*d);
       Double_t discr=m_p_half*m_p_half-q;
@@ -1591,7 +1602,7 @@ Int_t TUnfoldDensity::ScanTau
       Double_t *y=new Double_t[curve.size()];
       Double_t *logT=new Double_t[curve.size()];
       int n=0;
-      for (TauScan_t::const_iterator i = curve.begin(); i != curve.end(); ++i) {
+      for( TauScan_t::const_iterator i=curve.begin();i!=curve.end();i++) {
          if(logTauFin==(*i).first) {
             bestChoice=n;
          }
@@ -1616,7 +1627,7 @@ Int_t TUnfoldDensity::ScanTau
       Double_t *x=new Double_t[lcurve.size()];
       Double_t *y=new Double_t[lcurve.size()];
       Int_t n=0;
-      for (LCurve_t::const_iterator i = lcurve.begin(); i != lcurve.end(); ++i) {
+      for(LCurve_t::const_iterator i=lcurve.begin();i!=lcurve.end();i++) {
          logT[n]=(*i).first;
          x[n]=(*i).second.first;
          y[n]=(*i).second.second;
@@ -1624,7 +1635,7 @@ Int_t TUnfoldDensity::ScanTau
          n++;
       }
       if(lCurvePlot) {
-         *lCurvePlot=new TGraph(n,x,y);
+         *lCurvePlot=new TGraph(n,x,y); 
          (*lCurvePlot)->SetTitle("L curve");
       }
       if(logTauXPlot)
@@ -1638,8 +1649,8 @@ Int_t TUnfoldDensity::ScanTau
    return bestChoice;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Calculate the function for ScanTau().
+////////////////////////////////////////////////////////////////////////
+/// calculate the function for ScanTau()
 ///
 /// \param[in] mode the variable to be calculated
 /// \param[in] distribution distribution for which the variable
@@ -1649,21 +1660,23 @@ Int_t TUnfoldDensity::ScanTau
 ///
 /// return value: the scan result for the given choice of tau (for
 /// which the unfolding was performed prior to calling this method)
-///
+/// <br/>
 /// In ScanTau() the unfolding is repeated for various choices of tau.
 /// For each tau, after unfolding, GetScanVariable() is called to
 /// determine the scan result for this choice of tau.
-///
+/// <br/>
 /// the following modes are implemented
-///
-///   - kEScanTauRhoAvg : average (stat+bgr) global correlation
-///   - kEScanTauRhoSquaredAvg : average (stat+bgr) global correlation squared
-///   - kEScanTauRhoMax : maximum (stat+bgr) global correlation
-///   - kEScanTauRhoAvgSys : average (stat+bgr+sys) global correlation
-///   - kEScanTauRhoAvgSquaredSys : average (stat+bgr+sys) global correlation squared
-///   - kEScanTauRhoMaxSys : maximum (stat+bgr+sys) global correlation
+/// <ul>
+/// <li>kEScanTauRhoAvg : average (stat+bgr) global correlation</li>
+/// <li>kEScanTauRhoSquaredAvg : average (stat+bgr) global correlation squared</li>
+/// <li>kEScanTauRhoMax : maximum (stat+bgr) global correlation</li>
+/// <li>kEScanTauRhoAvgSys : average (stat+bgr+sys) global correlation</li>
+/// <li>kEScanTauRhoAvgSquaredSys : average (stat+bgr+sys) global correlation squared</li>
+/// <li>kEScanTauRhoMaxSys : maximum (stat+bgr+sys) global
+/// correlation</li>
+/// </ul>
 
-Double_t TUnfoldDensity::GetScanVariable
+Double_t TUnfoldDensityV17::GetScanVariable
 (Int_t mode,const char *distribution,const char *axisSteering)
 {
    Double_t r=0.0;
